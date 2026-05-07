@@ -11,6 +11,7 @@ import {
   HttpStatus,
   Request,
   Query,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -37,13 +38,13 @@ export class TasksController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string, @Request() req) {
+  async findOne(@Param('id', new ParseUUIDPipe()) id: string, @Request() req) {
     return this.tasksService.findOne(id, req.user.id);
   }
 
   @Patch(':id')
   async update(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body() updateTaskDto: UpdateTaskDto,
     @Request() req,
   ) {
@@ -52,7 +53,7 @@ export class TasksController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id') id: string, @Request() req) {
+  async remove(@Param('id', new ParseUUIDPipe()) id: string, @Request() req) {
     await this.tasksService.remove(id, req.user.id);
   }
 }
