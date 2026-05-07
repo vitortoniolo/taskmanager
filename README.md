@@ -17,11 +17,10 @@ Um organizador de tarefas simples e prático para gerenciar projetos e suas ativ
 ## 🛠️ Tecnologias Utilizadas
 
 - **Backend**: [NestJS](https://nestjs.com/) - Framework TypeScript moderno e escalável
-- **Banco de Dados**: PostgreSQL - SGBD robusto e confiável
+- **Banco de Dados**: PostgreSQL - Persistencia de dados entre execuções
 - **ORM**: TypeORM - Mapeamento objeto-relacional TypeScript
 - **Autenticação**: JWT (JSON Web Tokens) - Segurança de endpoints
 - **Validação**: Class Validator - Validação de DTOs
-- **Testes**: Jest - Framework de testes unitários e E2E
 
 ## 🚀 Como Começar
 
@@ -63,11 +62,6 @@ npm start
 # Modo watch (hot-reload)
 npm run start:dev
 
-# Rodar testes
-npm run test
-
-# Testes E2E
-npm run test:e2e
 ```
 
 ## 📚 Documentação
@@ -97,6 +91,7 @@ Authorization: Bearer seu_token_jwt
 ## 💡 Exemplos de Uso
 
 Para exemplos completos de requisições, consulte [endpoints.md](./endpoints.md) ou importe a coleção do Insomnia disponível no projeto.
+
 
 ## 📝 Licença
 
