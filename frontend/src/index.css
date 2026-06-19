@@ -1,0 +1,30 @@
+@import 'tailwindcss';
+
+/*
+  Tema dark mode — paleta ciano/verde sobre slate escuro.
+  Tokens expostos como utilitários Tailwind v4 via @theme.
+*/
+@theme {
+  --color-primary: #22d3ee; /* cyan */
+  --color-primary-hover: #06b6d4;
+  --color-accent: #34d399; /* green */
+  --color-bg: #0f172a; /* slate-900 */
+  --color-surface: #1e293b; /* slate-800 */
+  --color-surface-2: #334155; /* slate-700 */
+  --color-border: #334155;
+  --color-text: #e2e8f0; /* slate-200 */
+  --color-muted: #94a3b8; /* slate-400 */
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}

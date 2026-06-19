@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Relatório Técnico — Task Manager</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12pt;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 0 40px;
+      color: #000;
+    }
+
+    h1 {
+      font-size: 18pt;
+      font-weight: bold;
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 11pt;
+      margin-bottom: 32px;
+      color: #333;
+    }
+
+    h2 {
+      font-size: 14pt;
+      font-weight: bold;
+      margin-top: 32px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #000;
+      padding-bottom: 4px;
+    }
+
+    h3 {
+      font-size: 12pt;
+      font-weight: bold;
+      margin-top: 20px;
+      margin-bottom: 6px;
+    }
+
+    h4 {
+      font-size: 12pt;
+      font-weight: bold;
+      font-style: italic;
+      margin-top: 16px;
+      margin-bottom: 4px;
+    }
+
+    p {
+      margin: 8px 0;
+      text-align: justify;
+    }
+
+    ul, ol {
+      margin: 8px 0;
+      padding-left: 24px;
+    }
+
+    li {
+      margin-bottom: 4px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 10pt;
+    }
+
+    th {
+      background-color: #d9d9d9;
+      font-weight: bold;
+      border: 1px solid #555;
+      padding: 6px 10px;
+      text-align: left;
+    }
+
+    td {
+      border: 1px solid #888;
+      padding: 5px 10px;
+      vertical-align: top;
+    }
+
+    tr:nth-child(even) td {
+      background-color: #f5f5f5;
+    }
+
+    code {
+      font-family: "Courier New", Courier, monospace;
+      font-size: 9pt;
+      background-color: #f0f0f0;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    pre {
+      font-family: "Courier New", Courier, monospace;
+      font-size: 9pt;
+      background-color: #f4f4f4;
+      border: 1px solid #ccc;
+      border-left: 4px solid #888;
+      padding: 12px 16px;
+      overflow-x: auto;
+      white-space: pre;
+      line-height: 1.4;
+      margin: 12px 0;
+    }
+
+    .diagram {
+      font-family: "Courier New", Courier, monospace;
+      font-size: 9pt;
+      background-color: #fafafa;
+      border: 1px solid #ccc;
+      padding: 12px 16px;
+      white-space: pre;
+      line-height: 1.5;
+      margin: 12px 0;
+      text-align: left;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #aaa;
+      margin: 24px 0;
+    }
+
+    .page-break {
+      page-break-before: always;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Relatório Técnico: Task Manager</h1>
+<div class="subtitle">
+  <strong>Disciplina:</strong> Programação Full Stack<br/>
+  <strong>Projeto:</strong> Task Manager, API REST para Gerenciamento Colaborativo de Tarefas
+</div>
+
+<hr/>
+
+<!-- ============================================================ -->
+<h2>1. Introdução</h2>
+
+<p>
+  Este relatório descreve o desenvolvimento do <strong>Task Manager</strong>, uma API REST construída para a disciplina de Programação Full Stack. A aplicação tem como objetivo central permitir que equipes organizem suas tarefas de forma simples, colaborativa e rastreável, por meio de uma interface de programação bem definida e segura.
+</p>
+
+<p>
+  O sistema foi desenvolvido utilizando <strong>NestJS</strong> como framework principal, <strong>TypeScript</strong> como linguagem, <strong>PostgreSQL</strong> como banco de dados relacional e <strong>TypeORM</strong> como camada de mapeamento objeto-relacional. A autenticação é realizada via <strong>JSON Web Tokens (JWT)</strong>.
+</p>
+
+<p>
+  O presente documento descreve o problema que motivou a aplicação, a solução implementada com seus requisitos e funcionalidades, a arquitetura de software adotada com suas decisões técnicas, as ferramentas utilizadas e as considerações finais sobre o trabalho.
+</p>
+
+<!-- ============================================================ -->
+<h2>2. Problema</h2>
+
+<p>
+  Qualquer grupo de pessoas que precise realizar algo em conjunto enfrenta o mesmo problema básico: manter o controle do que precisa ser feito, quem está fazendo e o que já foi concluído. Isso vale para um trabalho acadêmico em grupo, um projeto pessoal entre amigos, uma organização de evento ou qualquer outra iniciativa colaborativa.
+</p>
+
+<p>Sem um lugar centralizado para isso, a coordenação se torna confusa:</p>
+<ul>
+  <li>Tarefas ficam espalhadas em conversas de mensagens ou anotações pessoais;</li>
+  <li>Não fica claro quem ficou responsável por cada parte;</li>
+  <li>O grupo perde a noção do progresso geral;</li>
+  <li>Quando há mais de um projeto ou frente de trabalho, tudo se mistura.</li>
+</ul>
+
+<p>
+  A necessidade é simples: um lugar onde qualquer grupo possa registrar o que precisa ser feito, dividir as responsabilidades e acompanhar o andamento, sem precisar aprender nada complexo para isso.
+</p>
+
+<p>
+  O Task Manager foi desenvolvido com essa proposta: ser direto e funcional, respondendo a uma pergunta objetiva: <strong>quem faz o quê, em qual projeto, e em que estado está</strong>.
+</p>
+
+<h3>Requisitos derivados do problema</h3>
+<table>
+  <tr><th>Requisito</th><th>Origem</th></tr>
+  <tr><td>Cada pessoa possui conta própria e acessa apenas o que lhe pertence</td><td>Isolamento e privacidade</td></tr>
+  <tr><td>Projetos agrupam tarefas e membros</td><td>Organização por contexto</td></tr>
+  <tr><td>Tarefas têm responsável designado e estado de progresso rastreável</td><td>Visibilidade e responsabilidade</td></tr>
+  <tr><td>Qualquer equipe pode usar, independente do tipo de projeto</td><td>Generalidade da solução</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>3. Solução</h2>
+
+<h3>3.1 Descrição Geral da Aplicação</h3>
+
+<p>O Task Manager é uma <strong>API REST</strong> organizada em quatro domínios funcionais:</p>
+<ul>
+  <li><strong>Autenticação (Auth):</strong> registro e login de usuários, emissão e validação de tokens JWT;</li>
+  <li><strong>Usuários (Users):</strong> gerenciamento de perfis de usuário;</li>
+  <li><strong>Projetos (Projects):</strong> criação e gerenciamento de projetos colaborativos com controle de membros;</li>
+  <li><strong>Tarefas (Tasks):</strong> criação, atribuição e acompanhamento de tarefas dentro dos projetos.</li>
+</ul>
+
+<p>A API expõe <strong>18 endpoints</strong> documentados em <code>endpoints.md</code>, todos protegidos por autenticação JWT, exceto os endpoints públicos de registro e login.</p>
+
+<h3>3.2 Requisitos Funcionais</h3>
+<table>
+  <tr><th>ID</th><th>Descrição</th></tr>
+  <tr><td>RF01</td><td>O sistema deve permitir que um novo usuário se registre informando nome, e-mail e senha</td></tr>
+  <tr><td>RF02</td><td>O sistema deve autenticar o usuário via e-mail e senha, retornando um token JWT</td></tr>
+  <tr><td>RF03</td><td>Um usuário autenticado pode criar projetos</td></tr>
+  <tr><td>RF04</td><td>O criador do projeto é automaticamente adicionado como membro</td></tr>
+  <tr><td>RF05</td><td>Membros podem adicionar e remover outros usuários do projeto</td></tr>
+  <tr><td>RF06</td><td>Apenas membros do projeto podem visualizar seus dados e tarefas</td></tr>
+  <tr><td>RF07</td><td>Membros podem criar tarefas vinculadas ao projeto</td></tr>
+  <tr><td>RF08</td><td>O responsável pela tarefa (assignee) deve obrigatoriamente ser membro do projeto</td></tr>
+  <tr><td>RF09</td><td>O status das tarefas segue uma máquina de estados: TODO &rarr; DOING &rarr; DONE</td></tr>
+  <tr><td>RF10</td><td>A exclusão de um projeto deve remover automaticamente todas as suas tarefas</td></tr>
+  <tr><td>RF11</td><td>A exclusão de um usuário deve anular sua atribuição em tarefas, sem excluí-las</td></tr>
+</table>
+
+<h3>3.3 Funcionalidades Dependentes do Framework (NestJS)</h3>
+
+<p>Parte das funcionalidades da aplicação dependem diretamente das abstrações providas pelo NestJS:</p>
+
+<table>
+  <tr><th>Funcionalidade</th><th>Mecanismo NestJS</th></tr>
+  <tr><td>Roteamento HTTP e mapeamento de endpoints</td><td><code>@Controller()</code>, <code>@Get()</code>, <code>@Post()</code>, <code>@Patch()</code>, <code>@Delete()</code></td></tr>
+  <tr><td>Injeção de dependências entre classes</td><td><code>@Injectable()</code> + construtor com parâmetros tipados</td></tr>
+  <tr><td>Proteção de rotas autenticadas</td><td><code>@UseGuards(JwtGuard)</code> + <code>AuthGuard('jwt')</code> via <code>@nestjs/passport</code></td></tr>
+  <tr><td>Validação automática de entradas</td><td><code>ValidationPipe</code> global com <code>whitelist: true</code> e <code>forbidNonWhitelisted: true</code></td></tr>
+  <tr><td>Isolamento de funcionalidades em módulos</td><td><code>@Module()</code> com declarações de <code>imports</code>, <code>providers</code>, <code>controllers</code>, <code>exports</code></td></tr>
+  <tr><td>Integração com o repositório TypeORM</td><td><code>@InjectRepository()</code> para injeção do <code>Repository&lt;Entity&gt;</code></td></tr>
+  <tr><td>Leitura de variáveis de ambiente com tipagem</td><td><code>ConfigService</code> do <code>@nestjs/config</code></td></tr>
+  <tr><td>DTOs com herança parcial</td><td><code>PartialType()</code> do <code>@nestjs/mapped-types</code> para UpdateDTOs</td></tr>
+</table>
+
+<p><strong>Exemplo:</strong> o guard de autenticação é declarativo e não requer código adicional no controller:</p>
+<pre>// src/tasks/tasks.controller.ts
+@Controller('tasks')
+@UseGuards(JwtGuard)   // protege todos os endpoints da classe de uma vez
+export class TasksController { ... }</pre>
+
+<h3>3.4 Funcionalidades Independentes do Framework</h3>
+
+<p>Outras funcionalidades existem como lógica pura, sem acoplamento ao NestJS:</p>
+
+<table>
+  <tr><th>Funcionalidade</th><th>Implementação</th></tr>
+  <tr><td>Hashing e verificação de senhas</td><td><code>bcrypt.hash()</code> / <code>bcrypt.compare()</code>, biblioteca independente de qualquer framework</td></tr>
+  <tr><td>Definição do ciclo de vida da tarefa</td><td><code>enum TaskStatus { TODO, DOING, DONE }</code>, TypeScript puro</td></tr>
+  <tr><td>Validação de transição de estados</td><td>Método <code>validateTaskStatusTransition()</code> com lógica de máquina de estados</td></tr>
+  <tr><td>Controle de acesso por membro</td><td>Verificação <code>project.users.some(u =&gt; u.id === userId)</code> nos services</td></tr>
+  <tr><td>Validação de campos dos DTOs</td><td>Decorators <code>@IsString()</code>, <code>@IsEmail()</code>, <code>@IsUUID()</code> do <code>class-validator</code></td></tr>
+</table>
+
+<p><strong>Exemplo da máquina de estados</strong> (independente de qualquer framework):</p>
+<pre>// src/tasks/tasks.service.ts
+private validateTaskStatusTransition(current: TaskStatus, next: TaskStatus) {
+  const valid: Record&lt;TaskStatus, TaskStatus[]&gt; = {
+    [TaskStatus.TODO]:  [TaskStatus.TODO, TaskStatus.DOING],
+    [TaskStatus.DOING]: [TaskStatus.DOING, TaskStatus.DONE],
+    [TaskStatus.DONE]:  [TaskStatus.DONE],
+  };
+  if (!valid[current].includes(next)) {
+    throw new BadRequestException(`Cannot transition from ${current} to ${next}`);
+  }
+}</pre>
+
+<p>Essa lógica poderia ser extraída e reutilizada em qualquer outro ambiente Node.js sem qualquer adaptação.</p>
+
+<!-- ============================================================ -->
+<h2>4. Arquitetura do Sistema</h2>
+
+<h3>4.1 Arquitetura Adotada</h3>
+
+<p>
+  O projeto utiliza <strong>Arquitetura em Camadas (Layered Architecture)</strong> combinada com <strong>Arquitetura Modular</strong>, padrão natural do NestJS.
+</p>
+
+<h4>Arquitetura em Camadas</h4>
+
+<ol style="margin: 12px 0; padding-left: 20px; font-size: 11pt;">
+  <li style="margin-bottom: 8px;"><strong>Camada de Apresentação (Controllers):</strong> recebe as requisições HTTP, valida a autenticação e delega o processamento ao service correspondente, retornando a resposta ao cliente.</li>
+  <li style="margin-bottom: 8px;"><strong>Camada de Negócio (Services):</strong> aplica as regras de negócio da aplicação, incluindo controle de membros, máquina de estados das tarefas e demais validações de domínio.</li>
+  <li style="margin-bottom: 8px;"><strong>Camada de Acesso a Dados (Repositories / TypeORM):</strong> executa as queries no banco de dados, persiste entidades e gerencia os relacionamentos entre elas.</li>
+  <li style="margin-bottom: 0;"><strong>Banco de Dados (PostgreSQL):</strong> armazena os dados de forma relacional, garantindo integridade referencial via chaves estrangeiras e constraints.</li>
+</ol>
+
+<p><strong>Exemplos concretos por camada:</strong></p>
+<ul>
+  <li><strong>Controller:</strong> <code>TasksController.create()</code> em <code>src/tasks/tasks.controller.ts</code> extrai o <code>userId</code> do token JWT (<code>req.user.id</code>) e repassa ao service, sem conter nenhuma lógica de negócio.</li>
+  <li><strong>Service:</strong> <code>TasksService.create()</code> em <code>src/tasks/tasks.service.ts</code> verifica se o usuário é membro do projeto, se o assignee também é membro, e só então persiste a tarefa.</li>
+  <li><strong>Repository:</strong> <code>this.tasksRepository.save(task)</code> persiste a entidade sem conhecer as regras de negócio que a geraram.</li>
+</ul>
+
+<h4>Arquitetura Modular</h4>
+
+<p>Cada domínio é encapsulado em um módulo NestJS independente:</p>
+
+<div class="diagram">AppModule
+├── AuthModule     → AuthController, AuthService, JwtStrategy
+├── UsersModule    → UsersController, UsersService
+├── ProjectsModule → ProjectsController, ProjectsService
+└── TasksModule    → TasksController, TasksService</div>
+
+<p>
+  Módulos se comunicam exclusivamente via <code>exports</code>/<code>imports</code> declarativos no <code>@Module()</code>. Por exemplo, <code>AuthModule</code> exporta <code>AuthService</code> para que <code>JwtStrategy</code> possa validar usuários durante a autenticação.
+</p>
+
+<h3>4.2 Modelagem de Domínio</h3>
+
+<h4>Entidades</h4>
+
+<p><strong>User</strong> (<code>src/users/entities/user.entity.ts</code>)</p>
+<table>
+  <tr><th>Campo</th><th>Tipo</th><th>Restrição</th></tr>
+  <tr><td>id</td><td>UUID</td><td>PK, gerado automaticamente</td></tr>
+  <tr><td>name</td><td>varchar(255)</td><td>obrigatório</td></tr>
+  <tr><td>email</td><td>varchar(255)</td><td>obrigatório, único</td></tr>
+  <tr><td>password</td><td>varchar</td><td>obrigatório, excluído das respostas (<code>@Exclude()</code>)</td></tr>
+  <tr><td>createdAt</td><td>timestamp</td><td>gerado automaticamente</td></tr>
+  <tr><td>updatedAt</td><td>timestamp</td><td>atualizado automaticamente</td></tr>
+</table>
+
+<p><strong>Project</strong> (<code>src/projects/entities/project.entity.ts</code>)</p>
+<table>
+  <tr><th>Campo</th><th>Tipo</th><th>Restrição</th></tr>
+  <tr><td>id</td><td>UUID</td><td>PK, gerado automaticamente</td></tr>
+  <tr><td>name</td><td>varchar(255)</td><td>obrigatório</td></tr>
+  <tr><td>description</td><td>text</td><td>opcional (nullable)</td></tr>
+  <tr><td>createdAt</td><td>timestamp</td><td>gerado automaticamente</td></tr>
+  <tr><td>updatedAt</td><td>timestamp</td><td>atualizado automaticamente</td></tr>
+</table>
+
+<p><strong>Task</strong> (<code>src/tasks/entities/task.entity.ts</code>)</p>
+<table>
+  <tr><th>Campo</th><th>Tipo</th><th>Restrição</th></tr>
+  <tr><td>id</td><td>UUID</td><td>PK, gerado automaticamente</td></tr>
+  <tr><td>title</td><td>varchar(255)</td><td>obrigatório</td></tr>
+  <tr><td>description</td><td>text</td><td>opcional (nullable)</td></tr>
+  <tr><td>status</td><td>enum</td><td>TODO | DOING | DONE, padrão: TODO</td></tr>
+  <tr><td>projectId</td><td>UUID</td><td>FK &rarr; Project, obrigatório</td></tr>
+  <tr><td>assigneeId</td><td>UUID</td><td>FK &rarr; User, opcional (nullable)</td></tr>
+  <tr><td>createdAt</td><td>timestamp</td><td>gerado automaticamente</td></tr>
+  <tr><td>updatedAt</td><td>timestamp</td><td>atualizado automaticamente</td></tr>
+</table>
+
+<h4>Relacionamentos entre Entidades</h4>
+
+<ul>
+  <li>
+    <strong>User &harr; Project (ManyToMany):</strong> Um usuário pode ser membro de vários projetos; um projeto pode ter vários membros. A tabela de junção <code>project_users_user</code> é gerenciada automaticamente pelo TypeORM via <code>@JoinTable()</code> declarado na entidade <code>Project</code>.
+  </li>
+  <li>
+    <strong>Project &rarr; Task (OneToMany com cascade):</strong> Um projeto contém muitas tarefas. A relação tem <code>cascade: true</code>, de modo que ao excluir um projeto, todas as suas tarefas são removidas automaticamente (<code>onDelete: 'CASCADE'</code> na FK).
+  </li>
+  <li>
+    <strong>User &rarr; Task — assignee (ManyToOne, nullable):</strong> Uma tarefa pode ser atribuída a um usuário membro do projeto. A relação é opcional; ao excluir o usuário, a FK é anulada (<code>onDelete: 'SET NULL'</code>), preservando a tarefa no sistema.
+  </li>
+</ul>
+
+<h4>Diagrama Entidade-Relacionamento</h4>
+
+<div class="diagram">┌──────────────┐     ┌──────────────────────┐     ┌──────────────┐
+│    users     │     │  project_users_user  │     │   projects   │
+│──────────────│     │──────────────────────│     │──────────────│
+│ id (PK,UUID) │◄───►│ userId (FK)          │◄───►│ id (PK,UUID) │
+│ name         │     │ projectId (FK)       │     │ name         │
+│ email        │     └──────────────────────┘     │ description  │
+│ password     │                                   │ createdAt    │
+│ createdAt    │                                   │ updatedAt    │
+│ updatedAt    │                                   └──────┬───────┘
+└──────┬───────┘                                          │ 1
+       │ 1                                                │
+       │ onDelete: SET NULL                               │ N  onDelete: CASCADE
+       │ N (assignee, nullable)                           │
+       │                                         ┌────────▼─────────┐
+       └────────────────────────────────────────►│      tasks       │
+                                                 │──────────────────│
+                                                 │ id (PK, UUID)    │
+                                                 │ title            │
+                                                 │ description      │
+                                                 │ status (enum)    │
+                                                 │ projectId (FK)   │
+                                                 │ assigneeId (FK?) │
+                                                 │ createdAt        │
+                                                 │ updatedAt        │
+                                                 └──────────────────┘</div>
+
+<h3>4.3 Segurança e Autorização</h3>
+
+<p><strong>Autenticação via JWT:</strong></p>
+<ul>
+  <li>Token Bearer assinado com <code>JWT_SECRET</code> (variável de ambiente), expiração de 7 dias (604.800 segundos).</li>
+  <li>Fluxo: login &rarr; <code>JwtService.sign(payload)</code> &rarr; cliente envia <code>Authorization: Bearer &lt;token&gt;</code> &rarr; <code>JwtStrategy</code> valida e popula <code>req.user</code>.</li>
+</ul>
+
+<p><strong>Proteção de senhas:</strong></p>
+<ul>
+  <li>Hashing com <code>bcrypt</code> usando 10 rounds de salt, tornando ataques de força bruta computacionalmente inviáveis.</li>
+  <li>O campo <code>password</code> é marcado com <code>@Exclude()</code> na entidade, garantindo que nunca seja serializado nas respostas da API.</li>
+</ul>
+
+<p><strong>Autorização por membros (Row-Level Security nos services):</strong></p>
+<ul>
+  <li>Antes de qualquer leitura ou escrita em projetos e tarefas, o service verifica se o usuário autenticado é membro do projeto correspondente.</li>
+  <li>Acessos não autorizados resultam em <code>ForbiddenException</code> (HTTP 403).</li>
+</ul>
+
+<p><strong>Validação de entrada:</strong></p>
+<ul>
+  <li><code>ValidationPipe</code> global com <code>whitelist: true</code> (ignora campos não declarados no DTO) e <code>forbidNonWhitelisted: true</code> (rejeita requisições com campos extras), prevenindo injeção de dados inesperados.</li>
+</ul>
+
+<h3>4.4 Decisões Técnicas Justificadas</h3>
+
+<table>
+  <tr><th>Decisão</th><th>Justificativa</th></tr>
+  <tr><td><code>synchronize: true</code> no TypeORM</td><td>Ambiente acadêmico/desenvolvimento: sincroniza o schema automaticamente com as entidades, eliminando a necessidade de migrations manuais</td></tr>
+  <tr><td>UUIDs como chave primária</td><td>Evita a enumeração sequencial de recursos (ex: <code>/tasks/1</code>, <code>/tasks/2</code>), aumentando a segurança da API</td></tr>
+  <tr><td>Hard delete (sem soft delete)</td><td>Adequado para o escopo do projeto; simplifica queries e o modelo de dados sem perda de funcionalidade relevante</td></tr>
+  <tr><td><code>CreateTaskDto</code> e <code>UpdateTaskDto</code> sem herança <code>PartialType</code></td><td><code>UpdateTaskDto</code> contém o campo <code>status</code> (inexistente no create) e não contém <code>projectId</code> (imutável após criação), tornando a herança inadequada</td></tr>
+  <tr><td>Verificação de membro via <code>.some()</code> nos services</td><td>Lógica de autorização explícita e testável, sem dependência de middlewares ou decorators adicionais</td></tr>
+  <tr><td>Cascade delete em Project &rarr; Task</td><td>Garante consistência referencial: não existem tarefas órfãs sem projeto</td></tr>
+  <tr><td>SET NULL em User &rarr; Task (assignee)</td><td>Preserva o histórico de tarefas mesmo após a saída de um membro, mantendo a integridade dos dados do projeto</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>5. Ferramentas Utilizadas</h2>
+
+<h3>NestJS v11</h3>
+<p>
+  Framework Node.js progressivo e modular, construído sobre TypeScript e Express. Provê um sistema de injeção de dependências nativo, decorators para definição de controllers, guards, módulos e pipes. Foi a espinha dorsal da aplicação, organizando o código em módulos independentes e coesos.
+</p>
+
+<h3>TypeScript 5.7</h3>
+<p>
+  Superset tipado do JavaScript que adiciona verificação de tipos estáticos, enums, decorators e inferência de tipos. Fundamental para a utilização do TypeORM e do NestJS, além de garantir maior segurança e clareza no código da aplicação.
+</p>
+
+<h3>PostgreSQL</h3>
+<p>
+  Sistema gerenciador de banco de dados relacional open source, utilizado para persistência dos dados. Suporta nativamente tipos UUID, colunas do tipo <code>enum</code>, chaves estrangeiras com comportamentos de <code>CASCADE</code> e <code>SET NULL</code>, e transações ACID.
+</p>
+
+<h3>TypeORM v0.3</h3>
+<p>
+  ORM (Object-Relational Mapper) para TypeScript/Node.js. Permite mapear entidades TypeScript para tabelas do banco de dados via decorators, definir relacionamentos, executar queries com o <code>QueryBuilder</code> e operar com repositórios tipados. Utilizado para toda a camada de persistência da aplicação.
+</p>
+
+<h3>bcrypt v6</h3>
+<p>
+  Biblioteca para hashing seguro de senhas. Implementa o algoritmo Bcrypt com salt rounds configuráveis, tornando ataques de dicionário e força bruta computacionalmente inviáveis. Utilizado no registro e na atualização de senhas de usuários.
+</p>
+
+<h3>JWT: @nestjs/jwt + passport-jwt</h3>
+<p>
+  Implementação de autenticação stateless via JSON Web Tokens. O <code>@nestjs/jwt</code> assina e verifica tokens; o <code>passport-jwt</code> extrai o token do header <code>Authorization: Bearer</code> e integra com o sistema de guards do NestJS. Utilizado para proteger todos os endpoints autenticados.
+</p>
+
+<h3>class-validator / class-transformer</h3>
+<p>
+  Bibliotecas para validação declarativa de objetos via decorators. O <code>class-validator</code> verifica campos (<code>@IsString()</code>, <code>@IsEmail()</code>, <code>@IsUUID()</code>, <code>@IsEnum()</code>, etc.) e o <code>class-transformer</code> converte plain objects em instâncias de classes. Utilizados em todos os DTOs da aplicação.
+</p>
+
+<h3>Jest v30</h3>
+<p>
+  Framework de testes unitários para JavaScript/TypeScript. Configurado no projeto com suporte a <code>ts-jest</code> para execução direta de arquivos TypeScript. A estrutura de testes está preparada para expansão futura.
+</p>
+
+<h3>ts-node</h3>
+<p>
+  Executor de TypeScript para Node.js sem necessidade de compilação prévia. Utilizado especificamente para executar o script de seed do banco de dados (<code>npm run seed</code>), que popula o ambiente com dados iniciais para desenvolvimento e testes.
+</p>
+
+<h3>IAs Utilizadas</h3>
+<p>
+  <em>(a preencher manualmente)</em>
+</p>
+
+<!-- ============================================================ -->
+<h2>6. Considerações Finais</h2>
+
+<p>
+  O <strong>Task Manager</strong> cumpre seu objetivo principal: oferecer uma API REST funcional, segura e bem estruturada para o gerenciamento colaborativo de tarefas. O projeto demonstra, na prática, conceitos centrais do desenvolvimento full stack moderno, como autenticação stateless, controle de acesso baseado em membros, modelagem relacional e organização de código em camadas e módulos.
+</p>
+
+<p>
+  A escolha da Arquitetura em Camadas mostrou-se adequada ao porte do projeto. A separação entre controllers (responsáveis pela interface HTTP), services (responsáveis pelas regras de negócio) e repositories (responsáveis pela persistência) torna o código legível, manutenível e fácil de estender. A implementação da máquina de estados para o ciclo de vida das tarefas (<code>TODO &rarr; DOING &rarr; DONE</code>) exemplifica como regras de negócio podem ser expressas de forma explícita e independente do framework.
+</p>
+
+<p>
+  O projeto também evidencia a distinção entre funcionalidades que dependem do framework, como roteamento, guards e injeção de dependências, e aquelas que são lógica pura, como o controle de transição de estados e a verificação de membros nos services. Essa separação é relevante tanto do ponto de vista de manutenção quanto de testabilidade.
+</p>
+
+<p>
+  Como principal limitação, o projeto ainda não conta com testes automatizados implementados. A suíte Jest está configurada, mas os casos de teste não foram escritos, o que representa uma área de melhoria natural para consolidar a confiabilidade da aplicação.
+</p>
+
+<p>
+  O próximo passo prioritário é o <strong>desenvolvimento do frontend</strong>, que consumirá esta API REST e trará a experiência completa ao usuário final: uma interface visual para criação e acompanhamento de projetos e tarefas, visualização do progresso da equipe em tempo real e gerenciamento de membros de forma intuitiva. A API está pronta e documentada (<code>endpoints.md</code>) para receber esse cliente.
+</p>
+
+</body>
+</html>
