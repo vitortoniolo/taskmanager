@@ -32,8 +32,6 @@ Um organizador de tarefas simples e prático para gerenciar projetos e suas ativ
 ### Instalação
 
 ```bash
-# Clonar o repositório
-git clone <seu-repositorio>
 
 # Instalar dependências
 npm install
