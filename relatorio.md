@@ -317,7 +317,7 @@ User ────────────────────── Project
 
 ### IAs Utilizadas
 
-- **Claude Code (Anthropic)** — assistente de programação usado como par durante o desenvolvimento: implementação de funcionalidades (ex.: modal de edição de cards, página "Minhas tarefas"), revisão da cobertura frontend↔backend e atualização da documentação. Todo o código gerado foi revisado e testado pela equipe antes da integração.
+- **Claude Code (Anthropic)** assistente de programação usado como par durante o desenvolvimento: implementação de funcionalidades, revisão da cobertura frontend↔backend e atualização da documentação. 
 
 ---
 
@@ -327,7 +327,7 @@ O **Task Manager** cumpre seu objetivo: oferecer uma aplicação full stack func
 
 A separação entre controllers (interface HTTP), services (regras de negócio) e repositories (persistência) torna o código legível, manutenível e fácil de estender, o que ficou evidente na própria evolução do projeto: a remoção da máquina de estados de transição e a adição da edição completa de tarefas exigiram alterações localizadas, sem efeitos colaterais em outras camadas. Uma revisão posterior de simplificação reforçou essa base: regras repetidas foram extraídas para helpers nos services e os estilos repetidos para classes CSS nomeadas, sem nenhuma mudança de comportamento. No frontend, a centralização das chamadas em `api/endpoints.ts` permitiu identificar e cobrir com interface todos os endpoints do backend, incluindo edição de projeto, perfil de usuário e a visão "Minhas tarefas".
 
-O trabalho também evidencia a distinção entre funcionalidades que dependem do framework — roteamento, guards, injeção de dependências — e aquelas que são lógica pura, como a verificação de membros nos services. Essa separação é relevante tanto para manutenção quanto para testabilidade.
+O trabalho também evidencia a distinção entre funcionalidades que dependem do framework, roteamento, guards, injeção de dependências, e aquelas que são lógica pura, como a verificação de membros nos services. Essa separação é relevante tanto para manutenção quanto para testabilidade.
 
 Como principal limitação, o projeto ainda não conta com testes automatizados implementados. A suíte Jest está configurada, mas os casos de teste não foram escritos — área de melhoria natural para consolidar a confiabilidade da aplicação. Outras evoluções possíveis incluem arrastar e soltar (drag-and-drop) dos cards entre colunas, comentários nas tarefas e notificações de atribuição.
 
