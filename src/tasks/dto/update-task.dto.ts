@@ -1,4 +1,11 @@
-import { IsString, MinLength, MaxLength, IsEnum, IsOptional, IsUUID } from 'class-validator';
+import {
+  IsString,
+  MinLength,
+  MaxLength,
+  IsEnum,
+  IsOptional,
+  IsUUID,
+} from 'class-validator';
 import { TaskStatus } from '../entities/task.entity';
 
 export class UpdateTaskDto {
@@ -18,7 +25,8 @@ export class UpdateTaskDto {
   @IsOptional()
   status?: TaskStatus;
 
+  // null remove o responsável da tarefa
   @IsUUID()
   @IsOptional()
-  assigneeId?: string;
+  assigneeId?: string | null;
 }

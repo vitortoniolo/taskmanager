@@ -54,8 +54,8 @@ export class Task {
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'assigneeId' })
-  assignee: User;
+  assignee: User | null;
 
   @Column({ type: 'uuid', nullable: true })
-  assigneeId: string;
+  assigneeId: string | null;
 }

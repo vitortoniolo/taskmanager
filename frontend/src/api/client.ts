@@ -1,4 +1,4 @@
-// Cliente HTTP fino sobre fetch. Injeta o token JWT e trata erros da API.
+// cliente HTTP fino sobre fetch. injeta o token JWT e trata erros da API
 
 const TOKEN_KEY = 'tm_token';
 
@@ -30,7 +30,7 @@ interface RequestOptions {
   auth?: boolean;
 }
 
-// As chamadas passam pelo proxy do Vite: /api -> http://localhost:3000
+//as chamadas passam pelo proxy do Vite: /api > http://localhost:3000
 export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, auth = true } = options;
 

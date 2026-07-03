@@ -1,4 +1,4 @@
-// Modelos de dados espelhando a API REST (endpoints.md)
+// modelos de dados da api (ver endpoints.md)
 
 export type TaskStatus = 'TODO' | 'DOING' | 'DONE';
 
@@ -26,6 +26,7 @@ export interface Task {
   description?: string | null;
   status: TaskStatus;
   projectId: string;
+  project?: Project | null;
   assigneeId?: string | null;
   assignee?: User | null;
   createdAt?: string;

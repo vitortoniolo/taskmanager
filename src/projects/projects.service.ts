@@ -29,6 +29,7 @@ export class ProjectsService {
       throw new NotFoundException('User not found');
     }
 
+    // quem cria o projeto já entra como membro
     const project = this.projectsRepository.create({
       ...createProjectDto,
       users: [user],
@@ -37,32 +38,25 @@ export class ProjectsService {
     return this.projectsRepository.save(project);
   }
 
+  // lista só os projetos em que o usuário é membro
   async findAll(userId: string) {
-    return this.projectsRepository
-      .createQueryBuilder('project')
-      .leftJoinAndSelect('project.users', 'user')
-      .leftJoinAndSelect('project.tasks', 'task')
-      .where('user.id = :userId', { userId })
-      .getMany();
+    return this.projectsRepository.find({
+      where: { users: { id: userId } },
+      relations: ['users', 'tasks'],
+    });
   }
 
   async findOne(id: string, userId: string) {
-    const project = await this.projectsRepository
-      .createQueryBuilder('project')
-      .leftJoinAndSelect('project.users', 'user')
-      .leftJoinAndSelect('project.tasks', 'task')
-      .where('project.id = :id', { id })
-      .getOne();
+    const project = await this.projectsRepository.findOne({
+      where: { id },
+      relations: ['users', 'tasks'],
+    });
 
     if (!project) {
       throw new NotFoundException(`Project with id ${id} not found`);
     }
-
-    const userBelongsToProject = project.users.some((u) => u.id === userId);
-    if (!userBelongsToProject) {
-      throw new ForbiddenException(
-        'You do not have access to this project',
-      );
+    if (!project.users.some((u) => u.id === userId)) {
+      throw new ForbiddenException('You do not have access to this project');
     }
 
     return project;
@@ -80,8 +74,13 @@ export class ProjectsService {
     await this.projectsRepository.remove(project);
   }
 
-  async addUserToProject(projectId: string, userId: string, currentUserId: string) {
+  async addUserToProject(
+    projectId: string,
+    userId: string,
+    currentUserId: string,
+  ) {
     const project = await this.findOne(projectId, currentUserId);
+
     const userToAdd = await this.usersRepository.findOne({
       where: { id: userId },
     });
@@ -89,9 +88,7 @@ export class ProjectsService {
     if (!userToAdd) {
       throw new NotFoundException('User not found');
     }
-
-    const userAlreadyInProject = project.users.some((u) => u.id === userId);
-    if (userAlreadyInProject) {
+    if (project.users.some((u) => u.id === userId)) {
       throw new BadRequestException('User already belongs to this project');
     }
 
@@ -99,15 +96,18 @@ export class ProjectsService {
     return this.projectsRepository.save(project);
   }
 
-  async removeUserFromProject(projectId: string, userId: string, currentUserId: string) {
+  async removeUserFromProject(
+    projectId: string,
+    userId: string,
+    currentUserId: string,
+  ) {
     const project = await this.findOne(projectId, currentUserId);
 
-    const userIndex = project.users.findIndex((u) => u.id === userId);
-    if (userIndex === -1) {
+    if (!project.users.some((u) => u.id === userId)) {
       throw new NotFoundException('User not found in this project');
     }
 
-    project.users.splice(userIndex, 1);
+    project.users = project.users.filter((u) => u.id !== userId);
     return this.projectsRepository.save(project);
   }
 }

@@ -15,6 +15,7 @@ import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { JwtGuard } from '../auth/guards/jwt.guard';
+import type { AuthRequest } from '../auth/auth-request';
 
 @Controller('projects')
 @UseGuards(JwtGuard)
@@ -23,17 +24,20 @@ export class ProjectsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() createProjectDto: CreateProjectDto, @Request() req) {
+  async create(
+    @Body() createProjectDto: CreateProjectDto,
+    @Request() req: AuthRequest,
+  ) {
     return this.projectsService.create(createProjectDto, req.user.id);
   }
 
   @Get()
-  async findAll(@Request() req) {
+  async findAll(@Request() req: AuthRequest) {
     return this.projectsService.findAll(req.user.id);
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string, @Request() req) {
+  async findOne(@Param('id') id: string, @Request() req: AuthRequest) {
     return this.projectsService.findOne(id, req.user.id);
   }
 
@@ -41,14 +45,14 @@ export class ProjectsController {
   async update(
     @Param('id') id: string,
     @Body() updateProjectDto: UpdateProjectDto,
-    @Request() req,
+    @Request() req: AuthRequest,
   ) {
     return this.projectsService.update(id, updateProjectDto, req.user.id);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id') id: string, @Request() req) {
+  async remove(@Param('id') id: string, @Request() req: AuthRequest) {
     await this.projectsService.remove(id, req.user.id);
   }
 
@@ -57,9 +61,13 @@ export class ProjectsController {
   async addUserToProject(
     @Param('projectId') projectId: string,
     @Param('userId') userId: string,
-    @Request() req,
+    @Request() req: AuthRequest,
   ) {
-    return this.projectsService.addUserToProject(projectId, userId, req.user.id);
+    return this.projectsService.addUserToProject(
+      projectId,
+      userId,
+      req.user.id,
+    );
   }
 
   @Delete(':projectId/users/:userId')
@@ -67,7 +75,7 @@ export class ProjectsController {
   async removeUserFromProject(
     @Param('projectId') projectId: string,
     @Param('userId') userId: string,
-    @Request() req,
+    @Request() req: AuthRequest,
   ) {
     await this.projectsService.removeUserFromProject(
       projectId,

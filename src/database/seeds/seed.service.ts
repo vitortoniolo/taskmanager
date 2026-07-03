@@ -18,136 +18,92 @@ export class SeedService {
   ) {}
 
   async seed() {
-    console.log('Starting database seed...');
+    console.log('iniciando o seed do banco...');
 
-    try {
-      // Clear existing data with try-catch for each
-      try {
-        await this.tasksRepository.query('DELETE FROM tasks');
-      } catch (e) {
-        // Table might not exist yet, that's ok
-      }
+    // limpa as tabelas (a ordem importa por causa das chaves estrangeiras)
+    await this.tasksRepository.query('DELETE FROM tasks');
+    await this.projectsRepository.query('DELETE FROM projects');
+    await this.usersRepository.query('DELETE FROM users');
 
-      try {
-        await this.projectsRepository.query('DELETE FROM projects');
-      } catch (e) {
-        // Table might not exist yet, that's ok
-      }
+    // cria os usuários (todos com a senha "password123")
+    const password = await bcrypt.hash('password123', 10);
 
-      try {
-        await this.usersRepository.query('DELETE FROM users');
-      } catch (e) {
-        // Table might not exist yet, that's ok
-      }
+    const [joao, maria, pedro] = await this.usersRepository.save(
+      this.usersRepository.create([
+        { name: 'João Silva', email: 'joao@example.com', password },
+        { name: 'Maria Santos', email: 'maria@example.com', password },
+        { name: 'Pedro Costa', email: 'pedro@example.com', password },
+      ]),
+    );
 
-      // Create users
-    const hashedPassword1 = await bcrypt.hash('password123', 10);
-    const hashedPassword2 = await bcrypt.hash('password123', 10);
-    const hashedPassword3 = await bcrypt.hash('password123', 10);
+    // cria os projetos
+    const [ecommerce, mobile, dashboard] = await this.projectsRepository.save(
+      this.projectsRepository.create([
+        {
+          name: 'E-Commerce Platform',
+          description: 'Build a complete e-commerce solution',
+          users: [joao, maria],
+        },
+        {
+          name: 'Mobile App',
+          description: 'Develop iOS and Android apps',
+          users: [maria, pedro],
+        },
+        {
+          name: 'Internal Dashboard',
+          description: 'Create analytics and reporting dashboard',
+          users: [joao, pedro],
+        },
+      ]),
+    );
 
-    const user1 = this.usersRepository.create({
-      name: 'João Silva',
-      email: 'joao@example.com',
-      password: hashedPassword1,
-    });
+    // cria as tarefas
+    await this.tasksRepository.save(
+      this.tasksRepository.create([
+        {
+          title: 'Design database schema',
+          description: 'Create ERD and database structure',
+          status: TaskStatus.DONE,
+          project: ecommerce,
+          assignee: joao,
+        },
+        {
+          title: 'Setup API authentication',
+          description: 'Implement JWT authentication system',
+          status: TaskStatus.DOING,
+          project: ecommerce,
+          assignee: maria,
+        },
+        {
+          title: 'Build product catalog',
+          description: 'Create product listing and details pages',
+          status: TaskStatus.TODO,
+          project: ecommerce,
+        },
+        {
+          title: 'Setup React Native project',
+          description: 'Initialize and configure React Native',
+          status: TaskStatus.DOING,
+          project: mobile,
+          assignee: maria,
+        },
+        {
+          title: 'Design UI components',
+          description: 'Create reusable UI components',
+          status: TaskStatus.TODO,
+          project: mobile,
+          assignee: pedro,
+        },
+        {
+          title: 'Setup dashboard framework',
+          description: 'Choose and setup dashboard framework',
+          status: TaskStatus.TODO,
+          project: dashboard,
+          assignee: joao,
+        },
+      ]),
+    );
 
-    const user2 = this.usersRepository.create({
-      name: 'Maria Santos',
-      email: 'maria@example.com',
-      password: hashedPassword2,
-    });
-
-    const user3 = this.usersRepository.create({
-      name: 'Pedro Costa',
-      email: 'pedro@example.com',
-      password: hashedPassword3,
-    });
-
-    const savedUser1 = await this.usersRepository.save(user1);
-    const savedUser2 = await this.usersRepository.save(user2);
-    const savedUser3 = await this.usersRepository.save(user3);
-
-    // Create projects
-    const project1 = this.projectsRepository.create({
-      name: 'E-Commerce Platform',
-      description: 'Build a complete e-commerce solution',
-      users: [savedUser1, savedUser2],
-    });
-
-    const project2 = this.projectsRepository.create({
-      name: 'Mobile App',
-      description: 'Develop iOS and Android apps',
-      users: [savedUser2, savedUser3],
-    });
-
-    const project3 = this.projectsRepository.create({
-      name: 'Internal Dashboard',
-      description: 'Create analytics and reporting dashboard',
-      users: [savedUser1, savedUser3],
-    });
-
-    const savedProject1 = await this.projectsRepository.save(project1);
-    const savedProject2 = await this.projectsRepository.save(project2);
-    const savedProject3 = await this.projectsRepository.save(project3);
-
-    // Create tasks for Project 1
-    const task1 = this.tasksRepository.create({
-      title: 'Design database schema',
-      description: 'Create ERD and database structure',
-      status: TaskStatus.DONE,
-      project: savedProject1,
-      assignee: savedUser1,
-    });
-
-    const task2 = this.tasksRepository.create({
-      title: 'Setup API authentication',
-      description: 'Implement JWT authentication system',
-      status: TaskStatus.DOING,
-      project: savedProject1,
-      assignee: savedUser2,
-    });
-
-    const task3 = this.tasksRepository.create({
-      title: 'Build product catalog',
-      description: 'Create product listing and details pages',
-      status: TaskStatus.TODO,
-      project: savedProject1,
-      assignee: undefined,
-    });
-
-    // Create tasks for Project 2
-    const task4 = this.tasksRepository.create({
-      title: 'Setup React Native project',
-      description: 'Initialize and configure React Native',
-      status: TaskStatus.DOING,
-      project: savedProject2,
-      assignee: savedUser2,
-    });
-
-    const task5 = this.tasksRepository.create({
-      title: 'Design UI components',
-      description: 'Create reusable UI components',
-      status: TaskStatus.TODO,
-      project: savedProject2,
-      assignee: savedUser3,
-    });
-
-    // Create tasks for Project 3
-    const task6 = this.tasksRepository.create({
-      title: 'Setup dashboard framework',
-      description: 'Choose and setup dashboard framework',
-      status: TaskStatus.TODO,
-      project: savedProject3,
-      assignee: savedUser1,
-    });
-
-    await this.tasksRepository.save([task1, task2, task3, task4, task5, task6]);
-
-    console.log('Database seed completed successfully!');
-    console.log(`Created 3 users, 3 projects, and 6 tasks`);
-    } catch (error) {
-      console.error('Error seeding database:', error);
-      throw error;
-    }
+    console.log('seed concluído: 3 usuários, 3 projetos e 6 tarefas');
   }
 }

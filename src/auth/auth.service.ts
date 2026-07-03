@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { User } from '../users/entities/user.entity';
@@ -21,9 +21,10 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new Error('User already exists');
+      throw new BadRequestException('User already exists');
     }
 
+    // a senha nunca é salva em texto plano
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
     const user = this.usersRepository.create({
@@ -33,8 +34,14 @@ export class AuthService {
 
     await this.usersRepository.save(user);
 
-    const { password, ...result } = user;
-    return result;
+    // devolve o usuário sem o campo de senha
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
   }
 
   async login(loginDto: LoginDto) {
@@ -43,7 +50,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new Error('Invalid credentials');
+      throw new BadRequestException('Invalid credentials');
     }
 
     const isPasswordValid = await bcrypt.compare(
@@ -52,14 +59,13 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      throw new Error('Invalid credentials');
+      throw new BadRequestException('Invalid credentials');
     }
 
     const payload = { sub: user.id, email: user.email };
-    const access_token = this.jwtService.sign(payload);
 
     return {
-      access_token,
+      access_token: this.jwtService.sign(payload),
       user: {
         id: user.id,
         email: user.email,

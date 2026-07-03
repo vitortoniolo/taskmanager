@@ -1,109 +1,136 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
-import { TaskCard } from '../components/TaskCard';
-import { ErrorAlert } from '../components/ui';
-import { getProject, listProjects } from '../api/endpoints';
-import type { Project, Task, TaskStatus } from '../types';
-
-const COLUMNS: { status: TaskStatus; label: string }[] = [
-  { status: 'TODO', label: 'A fazer' },
-  { status: 'DOING', label: 'Em progresso' },
-  { status: 'DONE', label: 'Concluídas' },
-];
+import { Modal } from '../components/Modal';
+import { Button, ErrorAlert, Input } from '../components/ui';
+import { createProject, listProjects } from '../api/endpoints';
+import type { Project } from '../types';
 
 export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
 
-  // Carrega a lista de projetos do usuário ao montar.
-  useEffect(() => {
-    listProjects()
-      .then((data) => {
-        setProjects(data);
-        if (data.length > 0) setSelectedId(data[0].id);
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []);
-
-  // Quando um projeto é selecionado, busca o detalhe (que inclui as tarefas).
-  useEffect(() => {
-    if (!selectedId) return;
-    getProject(selectedId)
-      .then((project) => setTasks(project.tasks ?? []))
-      .catch((err) => setError(err.message));
-  }, [selectedId]);
-
-  if (loading) {
-    return (
-      <Layout>
-        <p className="text-[var(--color-muted)]">Carregando...</p>
-      </Layout>
-    );
+  // busca os projetos do usuário; chamada também após criar um projeto novo
+  async function loadProjects() {
+    try {
+      setProjects(await listProjects());
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
   }
+
+  useEffect(() => {
+    loadProjects();
+  }, []);
 
   return (
     <Layout>
-      <ErrorAlert message={error} />
-
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[var(--color-text)]">Meus projetos</h1>
-        <p className="text-sm text-[var(--color-muted)]">Selecione um projeto para ver suas tarefas</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Meus projetos</h1>
+          <p className="text-sm text-slate-400">Clique em um projeto para ver suas tarefas</p>
+        </div>
+        <Button onClick={() => setShowModal(true)}>+ Novo projeto</Button>
       </div>
 
-      {projects.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-[var(--color-border)] p-10 text-center text-[var(--color-muted)]">
-          Nenhum projeto ainda. Crie um projeto pela API para vê-lo aqui.
+      <ErrorAlert message={error} />
+
+      {loading ? (
+        <p className="text-slate-400">Carregando...</p>
+      ) : projects.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-700 p-10 text-center text-slate-400">
+          Você ainda não tem projetos. Crie o primeiro no botão acima.
         </div>
       ) : (
-        <>
-          {/* Seletor de projetos como pills */}
-          <div className="mb-8 flex flex-wrap gap-2">
-            {projects.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setSelectedId(p.id)}
-                className={`rounded-lg border px-4 py-2 text-sm font-medium transition ${
-                  selectedId === p.id
-                    ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
-                    : 'border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-primary)]/50'
-                }`}
-              >
-                {p.name}
-              </button>
-            ))}
-          </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {projects.map((project) => (
+            <ProjectCard key={project.id} project={project} />
+          ))}
+        </div>
+      )}
 
-          {/* Quadro de tarefas por status */}
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-            {COLUMNS.map((col) => {
-              const colTasks = tasks.filter((t) => t.status === col.status);
-              return (
-                <div key={col.status} className="rounded-xl bg-[var(--color-surface)]/40 p-3">
-                  <div className="mb-3 flex items-center justify-between px-1">
-                    <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--color-muted)]">
-                      {col.label}
-                    </h2>
-                    <span className="rounded-full bg-[var(--color-surface-2)] px-2 py-0.5 text-xs text-[var(--color-muted)]">
-                      {colTasks.length}
-                    </span>
-                  </div>
-                  <div className="space-y-3">
-                    {colTasks.length === 0 ? (
-                      <p className="px-1 py-4 text-center text-xs text-slate-600">Vazio</p>
-                    ) : (
-                      colTasks.map((task) => <TaskCard key={task.id} task={task} />)
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </>
+      {showModal && (
+        <NewProjectModal
+          onClose={() => setShowModal(false)}
+          onCreated={() => {
+            setShowModal(false);
+            loadProjects();
+          }}
+        />
       )}
     </Layout>
+  );
+}
+
+function ProjectCard({ project }: { project: Project }) {
+  const taskCount = project.tasks?.length ?? 0;
+  const memberCount = project.users?.length ?? 0;
+
+  return (
+    <Link to={`/projects/${project.id}`} className="card clickable block p-5">
+      <h2 className="mb-1 text-lg font-semibold">{project.name}</h2>
+      <p className="mb-4 line-clamp-2 min-h-10 text-sm text-slate-400">
+        {project.description || 'Sem descrição'}
+      </p>
+      <div className="flex gap-4 text-xs text-slate-400">
+        <span>📋 {taskCount} tarefa(s)</span>
+        <span>👥 {memberCount} membro(s)</span>
+      </div>
+    </Link>
+  );
+}
+
+function NewProjectModal({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError('');
+    setSaving(true);
+    try {
+      await createProject(name, description || undefined);
+      onCreated();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal title="Novo projeto" onClose={onClose}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <ErrorAlert message={error} />
+        <Input
+          label="Nome"
+          placeholder="Ex: Site institucional"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
+        <Input
+          label="Descrição (opcional)"
+          placeholder="Do que se trata este projeto?"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+        <Button type="submit" className="w-full" disabled={saving}>
+          {saving ? 'Criando...' : 'Criar projeto'}
+        </Button>
+      </form>
+    </Modal>
   );
 }

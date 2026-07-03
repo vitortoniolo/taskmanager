@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Post,
-  Body,
-  HttpCode,
-  HttpStatus,
-  BadRequestException,
-} from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
@@ -17,20 +10,12 @@ export class AuthController {
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() createUserDto: CreateUserDto) {
-    try {
-      return await this.authService.register(createUserDto);
-    } catch (error) {
-      throw new BadRequestException(error.message);
-    }
+    return this.authService.register(createUserDto);
   }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto) {
-    try {
-      return await this.authService.login(loginDto);
-    } catch (error) {
-      throw new BadRequestException(error.message);
-    }
+    return this.authService.login(loginDto);
   }
 }

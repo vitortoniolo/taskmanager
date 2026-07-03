@@ -5,10 +5,10 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS
+  // libera cors para o frontend acessar a api
   app.enableCors();
 
-  // Global validation pipe
+  // validação global dos dados recebidos
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -23,4 +23,4 @@ async function bootstrap() {
   await app.listen(process.env.PORT ?? 3000);
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
-bootstrap();
+void bootstrap();

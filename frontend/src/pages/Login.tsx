@@ -50,9 +50,9 @@ export default function Login() {
           {loading ? 'Entrando...' : 'Entrar'}
         </Button>
       </form>
-      <p className="mt-6 text-center text-sm text-[var(--color-muted)]">
+      <p className="mt-6 text-center text-sm text-slate-400">
         Não tem conta?{' '}
-        <Link to="/register" className="font-semibold text-[var(--color-primary)] hover:underline">
+        <Link to="/register" className="link font-semibold">
           Cadastre-se
         </Link>
       </p>
@@ -60,6 +60,7 @@ export default function Login() {
   );
 }
 
+// caixa centralizada usada nas telas de login e cadastro
 export function AuthShell({
   title,
   subtitle,
@@ -74,12 +75,10 @@ export function AuthShell({
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="mb-2 text-3xl">✅</div>
-          <h1 className="text-2xl font-bold text-[var(--color-text)]">{title}</h1>
-          <p className="mt-1 text-sm text-[var(--color-muted)]">{subtitle}</p>
+          <h1 className="text-2xl font-bold">{title}</h1>
+          <p className="mt-1 text-sm text-slate-400">{subtitle}</p>
         </div>
-        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-7 shadow-xl">
-          {children}
-        </div>
+        <div className="card p-7">{children}</div>
       </div>
     </div>
   );

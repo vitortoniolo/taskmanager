@@ -196,10 +196,9 @@ Content-Type: application/json
 
 **Status válidos**: `TODO`, `DOING`, `DONE`
 
-**Transições permitidas**:
-- TODO → DOING, TODO
-- DOING → DONE, DOING
-- DONE → DONE
+As tarefas podem transitar livremente entre qualquer status.
+
+Enviar `"assigneeId": null` remove o responsável da tarefa.
 
 ### Deletar Tarefa
 ```http

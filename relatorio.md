@@ -1,17 +1,20 @@
 # Relatório Técnico — Task Manager
 
-**Disciplina:** Programação Full Stack  
-**Projeto:** Task Manager — API REST para Gerenciamento Colaborativo de Tarefas
+## Aplicação Full Stack para Gerenciamento Colaborativo de Tarefas
+
+**Disciplina:** Programação Full Stack
+**Autores:** _(preencher nomes dos integrantes)_
+**Turma:** _(preencher turma)_
 
 ---
 
 ## 1. Introdução
 
-Este relatório descreve o desenvolvimento do **Task Manager**, uma API REST construída para a disciplina de Programação Full Stack. A aplicação tem como objetivo central permitir que equipes organizem suas tarefas de forma simples, colaborativa e rastreável, por meio de uma interface de programação bem definida e segura.
+Este relatório descreve o desenvolvimento do **Task Manager**, uma aplicação full stack construída para a disciplina de Programação Full Stack. A aplicação tem como objetivo central permitir que equipes organizem suas tarefas de forma simples, colaborativa e rastreável, por meio de um quadro visual de tarefas apoiado por uma API REST bem definida e segura.
 
-O sistema foi desenvolvido utilizando **NestJS** como framework principal, **TypeScript** como linguagem, **PostgreSQL** como banco de dados relacional e **TypeORM** como camada de mapeamento objeto-relacional. A autenticação é realizada via **JSON Web Tokens (JWT)**.
+O sistema é composto por duas partes: um **backend** desenvolvido com **NestJS**, **TypeScript**, **PostgreSQL** e **TypeORM**, com autenticação via **JSON Web Tokens (JWT)**; e um **frontend SPA** desenvolvido com **React**, **Vite** e **Tailwind CSS**, que consome a API e oferece a experiência completa ao usuário final — do login ao acompanhamento do quadro de tarefas.
 
-O presente documento descreve o problema que motivou a aplicação, a solução implementada com seus requisitos e funcionalidades, a arquitetura de software adotada com suas decisões técnicas, as ferramentas utilizadas e as considerações finais sobre o trabalho.
+O presente documento descreve o problema que motivou a aplicação, a solução implementada com seus requisitos, funcionalidades e soluções de segurança e performance, a arquitetura de software adotada com o modelo de renderização e as decisões técnicas, as ferramentas utilizadas e as considerações finais sobre o trabalho.
 
 ---
 
@@ -37,6 +40,7 @@ A solução não precisa ser sofisticada; precisa ser objetiva: **quem faz o qu�
 | Cada pessoa possui conta própria e acessa apenas o que lhe pertence | Isolamento e privacidade |
 | Projetos agrupam tarefas e membros | Organização por contexto |
 | Tarefas têm responsável designado e estado de progresso rastreável | Visibilidade e responsabilidade |
+| O estado das tarefas pode ser corrigido livremente (ex.: reabrir uma tarefa concluída) | Flexibilidade do fluxo real de trabalho |
 | Qualquer equipe pode usar, independente do tipo de projeto | Generalidade da solução |
 
 ---
@@ -45,14 +49,14 @@ A solução não precisa ser sofisticada; precisa ser objetiva: **quem faz o qu�
 
 ### 3.1 Descrição Geral da Aplicação
 
-O Task Manager é uma **API REST** organizada em quatro domínios funcionais:
+O Task Manager é uma aplicação **full stack** composta por uma API REST e uma interface web SPA, organizada em quatro domínios funcionais:
 
 - **Autenticação (Auth):** registro e login de usuários, emissão e validação de tokens JWT;
-- **Usuários (Users):** gerenciamento de perfis de usuário;
-- **Projetos (Projects):** criação e gerenciamento de projetos colaborativos com controle de membros;
-- **Tarefas (Tasks):** criação, atribuição e acompanhamento de tarefas dentro dos projetos.
+- **Usuários (Users):** gerenciamento de perfis — edição de nome/senha e exclusão de conta;
+- **Projetos (Projects):** criação, edição e exclusão de projetos colaborativos com controle de membros;
+- **Tarefas (Tasks):** criação, edição completa, atribuição e acompanhamento de tarefas em um quadro por status.
 
-A API expõe **18 endpoints** documentados em `endpoints.md`, todos protegidos por autenticação JWT, exceto os endpoints públicos de registro e login.
+A API expõe **18 endpoints** documentados em `endpoints.md`, todos protegidos por autenticação JWT, exceto os endpoints públicos de registro e login. O frontend oferece representação visual para todas as operações da API: quadro de tarefas por status, modal de edição de card (aberto ao clicar na tarefa), painel de membros, página "Minhas tarefas" e modal de perfil.
 
 ### 3.2 Requisitos Funcionais
 
@@ -60,15 +64,19 @@ A API expõe **18 endpoints** documentados em `endpoints.md`, todos protegidos p
 |----|-----------|
 | RF01 | O sistema deve permitir que um novo usuário se registre informando nome, e-mail e senha |
 | RF02 | O sistema deve autenticar o usuário via e-mail e senha, retornando um token JWT |
-| RF03 | Um usuário autenticado pode criar projetos |
+| RF03 | Um usuário autenticado pode criar, editar e excluir projetos |
 | RF04 | O criador do projeto é automaticamente adicionado como membro |
 | RF05 | Membros podem adicionar e remover outros usuários do projeto |
 | RF06 | Apenas membros do projeto podem visualizar seus dados e tarefas |
 | RF07 | Membros podem criar tarefas vinculadas ao projeto |
 | RF08 | O responsável pela tarefa (assignee) deve obrigatoriamente ser membro do projeto |
-| RF09 | O status das tarefas segue uma máquina de estados: `TODO → DOING → DONE` |
-| RF10 | A exclusão de um projeto deve remover automaticamente todas as suas tarefas |
-| RF11 | A exclusão de um usuário deve anular sua atribuição em tarefas, sem excluí-las |
+| RF09 | Tarefas possuem status `TODO`, `DOING` ou `DONE` e podem transitar **livremente** entre eles |
+| RF10 | Ao clicar em um card, o usuário pode editar título, descrição completa, status e responsável |
+| RF11 | O usuário pode visualizar todas as tarefas atribuídas a ele, em todos os projetos |
+| RF12 | O usuário pode editar seu perfil (nome e senha) e excluir a própria conta |
+| RF13 | A exclusão de um projeto deve remover automaticamente todas as suas tarefas |
+| RF14 | A exclusão de um usuário deve anular sua atribuição em tarefas, sem excluí-las |
+
 
 ### 3.3 Funcionalidades Dependentes do Framework (NestJS)
 
@@ -102,27 +110,50 @@ Outras funcionalidades existem como lógica pura, sem acoplamento ao NestJS:
 |---|---|
 | Hashing e verificação de senhas | `bcrypt.hash()` / `bcrypt.compare()` — biblioteca independente |
 | Definição do ciclo de vida da tarefa | `enum TaskStatus { TODO, DOING, DONE }` — TypeScript puro |
-| Validação de transição de estados | Método `validateTaskStatusTransition()` com lógica de máquina de estados |
-| Controle de acesso por membro | Verificação `project.users.some(u => u.id === userId)` nos services |
+| Controle de acesso por membro | Helpers `getProjectAsMember()` e `getAssignee()` nos services |
+| Remoção de responsável da tarefa | `assigneeId: null` no update limpa a FK e a relação carregada |
 | Validação de campos dos DTOs | Decorators `@IsString()`, `@IsEmail()`, `@IsUUID()` do `class-validator` |
 
-**Exemplo da máquina de estados** (independente de qualquer framework):
+**Exemplo do controle de acesso por membro** (independente de qualquer framework):
 
 ```typescript
-// src/tasks/tasks.service.ts
-private validateTaskStatusTransition(current: TaskStatus, next: TaskStatus) {
-  const valid: Record<TaskStatus, TaskStatus[]> = {
-    [TaskStatus.TODO]:  [TaskStatus.TODO, TaskStatus.DOING],
-    [TaskStatus.DOING]: [TaskStatus.DOING, TaskStatus.DONE],
-    [TaskStatus.DONE]:  [TaskStatus.DONE],
-  };
-  if (!valid[current].includes(next)) {
-    throw new BadRequestException(`Cannot transition from ${current} to ${next}`);
+// src/tasks/tasks.service.ts — helper chamado antes de qualquer leitura ou escrita
+private async getProjectAsMember(projectId: string, userId: string) {
+  const project = await this.projectsRepository.findOne({
+    where: { id: projectId },
+    relations: ['users'],
+  });
+
+  if (!project) {
+    throw new NotFoundException('Project not found');
   }
+  if (!project.users.some((u) => u.id === userId)) {
+    throw new ForbiddenException('You do not have access to this project');
+  }
+
+  return project;
 }
 ```
 
 Essa lógica poderia ser extraída e reutilizada em qualquer outro ambiente Node.js sem qualquer adaptação.
+
+### 3.5 Soluções de Segurança
+
+1. **Hashing de senhas com bcrypt:** senhas nunca são armazenadas em texto plano — `bcrypt` com 10 rounds de salt torna ataques de dicionário e força bruta computacionalmente inviáveis. O campo `password` é ainda marcado com `@Exclude()` na entidade, garantindo que nunca seja serializado nas respostas da API.
+
+2. **Autenticação stateless via JWT:** token Bearer assinado com `JWT_SECRET` (variável de ambiente), expiração de 7 dias. Fluxo: login → `JwtService.sign(payload)` → cliente envia `Authorization: Bearer <token>` → `JwtStrategy` valida e popula `req.user`. No frontend, o token é injetado automaticamente pelo cliente HTTP (`api/client.ts`).
+
+3. **Autorização por membros (row-level nos services):** antes de qualquer leitura ou escrita em projetos e tarefas, o service verifica se o usuário autenticado é membro do projeto correspondente. Acessos não autorizados resultam em `ForbiddenException` (HTTP 403).
+
+4. **Validação e saneamento de entrada:** `ValidationPipe` global com `whitelist: true` (descarta campos não declarados no DTO) e `forbidNonWhitelisted: true` (rejeita requisições com campos extras), prevenindo mass assignment e injeção de dados inesperados. UUIDs validados com `ParseUUIDPipe` nas rotas.
+
+5. **Identificadores não sequenciais (UUID):** todas as chaves primárias são UUIDs gerados aleatoriamente, impedindo a enumeração de recursos por tentativa (ex.: iterar `/tasks/1`, `/tasks/2`...). Combinado com a autorização por membros, dificulta ataques de referência insegura a objetos (IDOR).
+
+### 3.6 Soluções de Performance
+
+1. **Carregamento de relações em query única:** os services usam `relations: ['project', 'assignee']` do TypeORM para trazer entidade e relacionamentos em um único `JOIN`, evitando o problema de N+1 queries. Somado à autenticação stateless via JWT (validada em memória, sem consulta de sessão), cada requisição toca o banco o mínimo necessário.
+
+2. **Build otimizado do frontend:** o Vite gera bundle de produção com tree-shaking e minificação (~60 kB gzip), servido como arquivos estáticos. Por ser uma SPA, a navegação entre páginas não recarrega o documento — apenas os dados necessários são buscados na API, com re-renderização reativa apenas dos componentes afetados.
 
 ---
 
@@ -130,32 +161,37 @@ Essa lógica poderia ser extraída e reutilizada em qualquer outro ambiente Node
 
 ### 4.1 Arquitetura Adotada
 
-O projeto utiliza **Arquitetura em Camadas (Layered Architecture)** combinada com **Arquitetura Modular**, padrão natural do NestJS.
+O projeto utiliza **Arquitetura em Camadas (Layered Architecture)** combinada com **Arquitetura Modular** no backend, e uma **SPA em componentes** no frontend.
 
 #### Arquitetura em Camadas
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  Camada de Apresentação — Controllers               │
-│  Recebe requisições HTTP, valida autenticação,      │
-│  delega ao service e retorna a resposta             │
+│  Frontend — SPA React (Vite + Tailwind)              │
+│  Páginas, componentes e cliente HTTP; consome a      │
+│  API via fetch com token JWT                         │
 ├─────────────────────────────────────────────────────┤
-│  Camada de Negócio — Services                       │
-│  Aplica regras de negócio: controle de membros,     │
-│  máquina de estados, validações de domínio          │
+│  Camada de Apresentação — Controllers                │
+│  Recebe requisições HTTP, valida autenticação,       │
+│  delega ao service e retorna a resposta              │
 ├─────────────────────────────────────────────────────┤
-│  Camada de Acesso a Dados — Repositories (TypeORM)  │
-│  Executa queries, persiste entidades,               │
-│  gerencia relacionamentos                           │
+│  Camada de Negócio — Services                        │
+│  Aplica regras de negócio: controle de membros,      │
+│  validações de domínio, atribuição de responsáveis   │
 ├─────────────────────────────────────────────────────┤
-│  Banco de Dados — PostgreSQL                        │
+│  Camada de Acesso a Dados — Repositories (TypeORM)   │
+│  Executa queries, persiste entidades,                │
+│  gerencia relacionamentos                            │
+├─────────────────────────────────────────────────────┤
+│  Banco de Dados — PostgreSQL                         │
 └─────────────────────────────────────────────────────┘
 ```
 
 **Exemplos concretos por camada:**
 
-- **Controller:** `TasksController.create()` em `src/tasks/tasks.controller.ts` extrai o `userId` do token JWT (`req.user.id`) e repassa ao service — nenhuma lógica de negócio aqui.
-- **Service:** `TasksService.create()` em `src/tasks/tasks.service.ts` verifica se o usuário é membro do projeto, se o assignee também é membro, e só então persiste a tarefa.
+- **Frontend:** `ProjectDetail.tsx` renderiza o quadro por status e abre o modal de edição ao clicar em um card; `api/endpoints.ts` centraliza todas as chamadas à API.
+- **Controller:** `TasksController.update()` extrai o `userId` do token JWT (`req.user.id`) e repassa ao service — nenhuma lógica de negócio aqui.
+- **Service:** `TasksService.update()` verifica se o usuário é membro do projeto e se o novo responsável também é, e só então persiste a alteração.
 - **Repository:** `this.tasksRepository.save(task)` persiste a entidade sem conhecer as regras de negócio que a geraram.
 
 #### Arquitetura Modular
@@ -170,11 +206,19 @@ AppModule
 └── TasksModule    → TasksController, TasksService
 ```
 
-Módulos se comunicam exclusivamente via `exports`/`imports` declarativos no `@Module()`. Por exemplo, `AuthModule` exporta `AuthService` para que `JwtStrategy` possa validar usuários durante a autenticação.
+Módulos se comunicam exclusivamente via `exports`/`imports` declarativos no `@Module()`. No frontend, a organização espelha essa separação: `pages/` (Dashboard, ProjectDetail, MyTasks, Login, Register), `components/` (TaskCard, Modal, Layout, ui), `context/` (AuthContext) e `api/` (client, endpoints).
 
-### 4.2 Modelagem de Domínio
+### 4.2 Modelo de Renderização
 
-#### Entidades
+O frontend adota **Client-Side Rendering (CSR)** no formato **SPA (Single-Page Application)**:
+
+- O servidor entrega apenas um HTML mínimo e o bundle JavaScript; o React constrói e atualiza toda a interface no navegador;
+- A navegação entre rotas (`react-router-dom`) troca componentes sem recarregar a página;
+- Os dados chegam sob demanda via `fetch` à API REST, e a tela é re-renderizada de forma reativa a partir do estado.
+
+CSR é adequado ao caso: a aplicação é inteiramente autenticada (atrás de login), o que torna SEO e renderização no servidor (SSR) irrelevantes — a prioridade é a interatividade do quadro de tarefas, com atualizações rápidas após cada ação (mover card, editar, atribuir responsável).
+
+### 4.3 Modelagem de Domínio
 
 **User** (`src/users/entities/user.entity.ts`)
 
@@ -184,8 +228,7 @@ Módulos se comunicam exclusivamente via `exports`/`imports` declarativos no `@M
 | name | varchar(255) | obrigatório |
 | email | varchar(255) | obrigatório, único |
 | password | varchar | obrigatório, excluído das respostas (`@Exclude()`) |
-| createdAt | timestamp | gerado automaticamente |
-| updatedAt | timestamp | atualizado automaticamente |
+| createdAt / updatedAt | timestamp | gerados automaticamente |
 
 **Project** (`src/projects/entities/project.entity.ts`)
 
@@ -194,8 +237,7 @@ Módulos se comunicam exclusivamente via `exports`/`imports` declarativos no `@M
 | id | UUID | PK, gerado automaticamente |
 | name | varchar(255) | obrigatório |
 | description | text | opcional (nullable) |
-| createdAt | timestamp | gerado automaticamente |
-| updatedAt | timestamp | atualizado automaticamente |
+| createdAt / updatedAt | timestamp | gerados automaticamente |
 
 **Task** (`src/tasks/entities/task.entity.ts`)
 
@@ -207,8 +249,7 @@ Módulos se comunicam exclusivamente via `exports`/`imports` declarativos no `@M
 | status | enum | `TODO` \| `DOING` \| `DONE`, padrão: `TODO` |
 | projectId | UUID | FK → Project, obrigatório |
 | assigneeId | UUID | FK → User, opcional (nullable) |
-| createdAt | timestamp | gerado automaticamente |
-| updatedAt | timestamp | atualizado automaticamente |
+| createdAt / updatedAt | timestamp | gerados automaticamente |
 
 #### Relacionamentos
 
@@ -221,116 +262,73 @@ User ────────────────────── Project
  └──── (assignee, nullable) ── Task
 ```
 
-- **User ↔ Project (ManyToMany):** Um usuário pode ser membro de vários projetos; um projeto pode ter vários membros. A tabela de junção é gerenciada automaticamente pelo TypeORM via `@JoinTable()` declarado na entidade `Project`.
+- **User ↔ Project (ManyToMany):** um usuário pode ser membro de vários projetos; um projeto pode ter vários membros. A tabela de junção é gerenciada automaticamente pelo TypeORM via `@JoinTable()` declarado na entidade `Project`.
 
-- **Project → Task (OneToMany com cascade):** Um projeto contém muitas tarefas. A relação tem `cascade: true`, de modo que ao excluir um projeto, todas as suas tarefas são removidas automaticamente pelo banco de dados (`onDelete: 'CASCADE'` na FK).
+- **Project → Task (OneToMany com cascade):** um projeto contém muitas tarefas. Ao excluir um projeto, todas as suas tarefas são removidas automaticamente pelo banco (`onDelete: 'CASCADE'` na FK).
 
-- **User → Task — assignee (ManyToOne, nullable):** Uma tarefa pode ser atribuída a um usuário (membro do projeto). A relação é opcional; ao excluir o usuário, a FK é anulada (`onDelete: 'SET NULL'`), preservando a tarefa no sistema.
-
-#### Diagrama Entidade-Relacionamento
-
-```
-┌──────────────┐        ┌─────────────────────┐        ┌──────────────┐
-│    users     │        │  project_users_user  │        │   projects   │
-│──────────────│        │─────────────────────│        │──────────────│
-│ id (PK, UUID)│◄──────►│ userId (FK)         │◄──────►│ id (PK, UUID)│
-│ name         │        │ projectId (FK)       │        │ name         │
-│ email        │        └─────────────────────┘        │ description  │
-│ password     │                                        │ createdAt    │
-│ createdAt    │                                        │ updatedAt    │
-│ updatedAt    │                                        └──────┬───────┘
-└──────┬───────┘                                               │ 1
-       │ 1                                                     │
-       │ (SET NULL)                                            │ N (CASCADE)
-       │ N                                                     │
-       │                                              ┌────────▼─────────┐
-       └──────────────────────────────────────────────┤      tasks       │
-                          assignee (nullable)          │──────────────────│
-                                                       │ id (PK, UUID)    │
-                                                       │ title            │
-                                                       │ description      │
-                                                       │ status (enum)    │
-                                                       │ projectId (FK)   │
-                                                       │ assigneeId (FK?) │
-                                                       │ createdAt        │
-                                                       │ updatedAt        │
-                                                       └──────────────────┘
-```
-
-### 4.3 Segurança e Autorização
-
-**Autenticação via JWT:**
-- Token Bearer assinado com `JWT_SECRET` (variável de ambiente), expiração de 7 dias (604.800 segundos)
-- Fluxo: login → `JwtService.sign(payload)` → cliente envia `Authorization: Bearer <token>` → `JwtStrategy` valida e popula `req.user`
-
-**Proteção de senhas:**
-- Hashing com `bcrypt` usando 10 rounds de salt, tornando ataques de força bruta computacionalmente inviáveis
-- O campo `password` é marcado com `@Exclude()` na entidade, garantindo que nunca seja serializado nas respostas da API
-
-**Autorização por membros (Row-Level Security nos services):**
-- Antes de qualquer leitura ou escrita em projetos e tarefas, o service verifica se o usuário autenticado é membro do projeto correspondente
-- Acessos não autorizados resultam em `ForbiddenException` (HTTP 403)
-
-**Validação de entrada:**
-- `ValidationPipe` global com `whitelist: true` (ignora campos não declarados no DTO) e `forbidNonWhitelisted: true` (rejeita requisições com campos extras), prevenindo injeção de dados inesperados
+- **User → Task — assignee (ManyToOne, nullable):** uma tarefa pode ser atribuída a um usuário (membro do projeto). A relação é opcional; ao excluir o usuário, a FK é anulada (`onDelete: 'SET NULL'`), preservando a tarefa. O mesmo mecanismo permite **remover o responsável** de uma tarefa enviando `assigneeId: null` na edição.
 
 ### 4.4 Decisões Técnicas Justificadas
 
 | Decisão | Justificativa |
 |---------|---------------|
-| `synchronize: true` no TypeORM | Ambiente acadêmico/desenvolvimento: sincroniza o schema automaticamente com as entidades, eliminando a necessidade de migrations manuais |
+| `synchronize: true` no TypeORM | Ambiente acadêmico/desenvolvimento: sincroniza o schema automaticamente com as entidades, eliminando migrations manuais |
 | UUIDs como chave primária | Evita a enumeração sequencial de recursos (ex: `/tasks/1`, `/tasks/2`), aumentando a segurança da API |
-| Hard delete (sem soft delete) | Adequado para o escopo do projeto; simplifica queries e o modelo de dados sem perda de funcionalidade relevante |
-| `CreateTaskDto` e `UpdateTaskDto` sem herança `PartialType` | `UpdateTaskDto` contém o campo `status` (inexistente no create) e não contém `projectId` (imutável após criação), tornando a herança inadequada |
-| Verificação de membro via `.some()` nos services | Lógica de autorização explícita e testável, sem dependência de middlewares ou decorators adicionais |
-| Cascade delete em `Project → Task` | Garante consistência referencial: não existem tarefas órfãs sem projeto |
-| SET NULL em `User → Task` (assignee) | Preserva o histórico de tarefas mesmo após a saída de um membro, mantendo a integridade dos dados do projeto |
+| Transição livre de status (remoção da máquina de estados) | A regra rígida `TODO → DOING → DONE` impedia fluxos legítimos (reabrir tarefa concluída); a flexibilidade reflete o uso real |
+| `assigneeId: null` para desatribuir | Semântica REST clara no `PATCH`: string desloca o responsável, `null` o remove — sem endpoint adicional |
+| Hard delete (sem soft delete) | Adequado ao escopo; simplifica queries e o modelo de dados sem perda de funcionalidade relevante |
+| `CreateTaskDto` e `UpdateTaskDto` sem herança `PartialType` | `UpdateTaskDto` contém `status` (inexistente no create) e não contém `projectId` (imutável após criação) |
+| Verificação de membro via `.some()` nos services | Lógica de autorização explícita e testável, sem middlewares ou decorators adicionais |
+| Regras repetidas extraídas em helpers privados | `getProjectAsMember()` e `getAssignee()` concentram as checagens de membro/responsável usadas por vários métodos dos services |
+| `req.user` tipado com a interface `AuthRequest` | Elimina o `any` nos controllers; o compilador passa a verificar o acesso a `req.user.id` |
+| SPA com CSR no frontend | Aplicação autenticada não precisa de SSR/SEO; prioriza interatividade do quadro |
+| Classes CSS nomeadas no frontend (`.card`, `.btn`, `.badge`...) | Substituem listas longas de utilitários no JSX; o Tailwind fica reservado ao layout |
+| Estado global mínimo (apenas AuthContext) | Os dados de projeto/tarefas vivem no estado local das páginas e são recarregados após cada mutação — simples e sempre consistente com o servidor |
 
 ---
 
 ## 5. Ferramentas Utilizadas
 
-### NestJS v11
-Framework Node.js progressivo e modular, construído sobre TypeScript e Express. Provê um sistema de injeção de dependências nativo, decorators para definição de controllers, guards, módulos e pipes. Foi a espinha dorsal da aplicação, organizando o código em módulos independentes e coesos.
+### Backend
 
-### TypeScript 5.7
-Superset tipado do JavaScript que adiciona verificação de tipos estáticos, enums, decorators e inferência de tipos. Fundamental para a utilização do TypeORM e do NestJS, além de garantir maior segurança e clareza no código da aplicação.
+- **NestJS v11** — framework Node.js progressivo e modular sobre TypeScript e Express. Provê injeção de dependências nativa e decorators para controllers, guards, módulos e pipes. Espinha dorsal da API.
+- **TypeScript 5.7** — superset tipado do JavaScript com verificação estática, enums e decorators. Fundamental para o NestJS/TypeORM e para a segurança do código.
+- **PostgreSQL** — SGBD relacional open source. Suporta nativamente UUID, colunas `enum`, FKs com `CASCADE`/`SET NULL` e transações ACID.
+- **TypeORM v0.3** — ORM que mapeia entidades TypeScript para tabelas via decorators, com repositórios tipados e carregamento de relações. Toda a camada de persistência.
+- **ts-node / Jest v30** — execução de TypeScript sem compilação prévia (usado no seed do banco, `npm run seed`) e framework de testes configurado para expansão futura.
 
-### PostgreSQL
-Sistema gerenciador de banco de dados relacional open source, utilizado para persistência dos dados. Suporta nativamente tipos UUID, colunas do tipo `enum`, chaves estrangeiras com comportamentos de `CASCADE` e `SET NULL`, e transações ACID.
+### Frontend
 
-### TypeORM v0.3
-ORM (Object-Relational Mapper) para TypeScript/Node.js. Permite mapear entidades TypeScript para tabelas do banco de dados via decorators, definir relacionamentos, executar queries com o `QueryBuilder` e operar com repositórios tipados. Utilizado para toda a camada de persistência da aplicação.
+- **React 18** — biblioteca de construção de interfaces por componentes com renderização reativa a partir do estado. Base de todas as páginas e componentes da SPA.
+- **React Router v6** — roteamento client-side; define as rotas protegidas (`/`, `/my-tasks`, `/projects/:id`) e as públicas (`/login`, `/register`).
+- **Vite v5** — bundler e servidor de desenvolvimento. Provê HMR instantâneo, proxy para a API em desenvolvimento e build de produção otimizado (tree-shaking e minificação).
+- **Tailwind CSS v4** — framework CSS utilitário. O tema dark (paleta ciano/verde) é definido com tokens em `@theme`; os padrões visuais repetidos viram classes nomeadas (`.card`, `.btn`, `.badge`) no `index.css`, deixando o JSX com utilitários apenas de layout.
 
-### bcrypt v6
-Biblioteca para hashing seguro de senhas. Implementa o algoritmo Bcrypt com salt rounds configuráveis, tornando ataques de dicionário e força bruta computacionalmente inviáveis. Utilizado no registro e na atualização de senhas de usuários.
+### Segurança
 
-### JWT — @nestjs/jwt + passport-jwt
-Implementação de autenticação stateless via JSON Web Tokens. O `@nestjs/jwt` assina e verifica tokens; o `passport-jwt` extrai o token do header `Authorization: Bearer` e integra com o sistema de guards do NestJS. Utilizado para proteger todos os endpoints autenticados.
+- **bcrypt v6** — hashing seguro de senhas com salt rounds configuráveis. Usado no registro e na atualização de senha.
+- **@nestjs/jwt + passport-jwt** — autenticação stateless via JWT: assinatura/verificação de tokens e extração do header `Authorization: Bearer` integrada aos guards do NestJS.
+- **class-validator / class-transformer** — validação declarativa dos DTOs (`@IsString()`, `@IsEmail()`, `@IsUUID()`, `@IsEnum()`) e transformação de plain objects em instâncias tipadas.
 
-### class-validator / class-transformer
-Bibliotecas para validação declarativa de objetos via decorators. O `class-validator` verifica campos (`@IsString()`, `@IsEmail()`, `@IsUUID()`, `@IsEnum()`, etc.) e o `class-transformer` converte plain objects em instâncias de classes. Utilizados em todos os DTOs da aplicação.
+### Performance
 
-### Jest v30
-Framework de testes unitários para JavaScript/TypeScript. Configurado no projeto com suporte a `ts-jest` para execução direta de arquivos TypeScript. A estrutura de testes está preparada para expansão futura.
+- **Vite (build de produção)** — bundle minificado com tree-shaking (~60 kB gzip) servido estaticamente.
+- **TypeORM (relations)** — carregamento de relacionamentos via `JOIN` em query única, evitando N+1.
 
-### ts-node
-Executor de TypeScript para Node.js sem necessidade de compilação prévia. Utilizado especificamente para executar o script de seed do banco de dados (`npm run seed`), que popula o ambiente com dados iniciais para desenvolvimento e testes.
+### IAs Utilizadas
 
-### IAs utilizadas
-
-_(a preencher manualmente)_
+- **Claude Code (Anthropic)** — assistente de programação usado como par durante o desenvolvimento: implementação de funcionalidades (ex.: modal de edição de cards, página "Minhas tarefas"), revisão da cobertura frontend↔backend e atualização da documentação. Todo o código gerado foi revisado e testado pela equipe antes da integração.
 
 ---
 
 ## 6. Considerações Finais
 
-O **Task Manager** cumpre seu objetivo principal: oferecer uma API REST funcional, segura e bem estruturada para o gerenciamento colaborativo de tarefas. O projeto demonstra, na prática, conceitos centrais do desenvolvimento full stack moderno — autenticação stateless, controle de acesso baseado em membros, modelagem relacional e organização de código em camadas e módulos.
+O **Task Manager** cumpre seu objetivo: oferecer uma aplicação full stack funcional, segura e bem estruturada para o gerenciamento colaborativo de tarefas. O projeto demonstra, na prática, conceitos centrais do desenvolvimento web moderno — autenticação stateless, controle de acesso baseado em membros, modelagem relacional, organização em camadas e módulos no backend e renderização client-side no frontend.
 
-A escolha da Arquitetura em Camadas mostrou-se adequada ao porte do projeto. A separação entre controllers (responsáveis pela interface HTTP), services (responsáveis pelas regras de negócio) e repositories (responsáveis pela persistência) torna o código legível, manutenível e fácil de estender. A implementação da máquina de estados para o ciclo de vida das tarefas (`TODO → DOING → DONE`) exemplifica como regras de negócio podem ser expressas de forma explícita e independente do framework.
+A separação entre controllers (interface HTTP), services (regras de negócio) e repositories (persistência) torna o código legível, manutenível e fácil de estender, o que ficou evidente na própria evolução do projeto: a remoção da máquina de estados de transição e a adição da edição completa de tarefas exigiram alterações localizadas, sem efeitos colaterais em outras camadas. Uma revisão posterior de simplificação reforçou essa base: regras repetidas foram extraídas para helpers nos services e os estilos repetidos para classes CSS nomeadas, sem nenhuma mudança de comportamento. No frontend, a centralização das chamadas em `api/endpoints.ts` permitiu identificar e cobrir com interface todos os endpoints do backend, incluindo edição de projeto, perfil de usuário e a visão "Minhas tarefas".
 
-O projeto também evidencia a distinção entre funcionalidades que dependem do framework — como roteamento, guards e injeção de dependências — e aquelas que são lógica pura, como o controle de transição de estados e a verificação de membros nos services. Essa separação é relevante tanto do ponto de vista de manutenção quanto de testabilidade.
+O trabalho também evidencia a distinção entre funcionalidades que dependem do framework — roteamento, guards, injeção de dependências — e aquelas que são lógica pura, como a verificação de membros nos services. Essa separação é relevante tanto para manutenção quanto para testabilidade.
 
-Como principal limitação, o projeto ainda não conta com testes automatizados implementados. A suíte Jest está configurada, mas os casos de teste não foram escritos — o que representa uma área de melhoria natural para consolidar a confiabilidade da aplicação.
+Como principal limitação, o projeto ainda não conta com testes automatizados implementados. A suíte Jest está configurada, mas os casos de teste não foram escritos — área de melhoria natural para consolidar a confiabilidade da aplicação. Outras evoluções possíveis incluem arrastar e soltar (drag-and-drop) dos cards entre colunas, comentários nas tarefas e notificações de atribuição.
 
-O próximo passo prioritário é o **desenvolvimento do frontend**, que consumirá esta API REST e trará a experiência completa ao usuário final: uma interface visual para criação e acompanhamento de projetos e tarefas, visualização do progresso da equipe em tempo real e gerenciamento de membros de forma intuitiva. A API está pronta e documentada (`endpoints.md`) para receber esse cliente.
+Como contribuição, o trabalho consolidou o ciclo completo de uma aplicação full stack: da modelagem do domínio à interface final, passando por autenticação, autorização, validação e documentação da API (`endpoints.md`) — uma base sólida e extensível para qualquer sistema colaborativo semelhante.

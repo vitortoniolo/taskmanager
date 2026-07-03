@@ -61,9 +61,9 @@ export default function Register() {
           {loading ? 'Criando...' : 'Criar conta'}
         </Button>
       </form>
-      <p className="mt-6 text-center text-sm text-[var(--color-muted)]">
+      <p className="mt-6 text-center text-sm text-slate-400">
         Já tem conta?{' '}
-        <Link to="/login" className="font-semibold text-[var(--color-primary)] hover:underline">
+        <Link to="/login" className="link font-semibold">
           Entrar
         </Link>
       </p>

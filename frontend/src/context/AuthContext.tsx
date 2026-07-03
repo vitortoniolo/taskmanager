@@ -8,6 +8,8 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  updateProfile: (input: { name?: string; password?: string }) => Promise<void>;
+  deleteAccount: () => Promise<void>;
   logout: () => void;
 }
 
@@ -21,7 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return raw ? (JSON.parse(raw) as User) : null;
   });
 
-  // Mantém o usuário persistido em sincronia com o estado.
+  // guarda o usuário no localstorage sempre que ele muda
   useEffect(() => {
     if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
     else localStorage.removeItem(USER_KEY);
@@ -35,8 +37,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function register(name: string, email: string, password: string) {
     await apiEndpoints.register(name, email, password);
-    // Após registrar, autentica automaticamente.
+    // depois de registrar já faz o login
     await login(email, password);
+  }
+
+  // atualiza nome e/ou senha do usuário logado
+  async function updateProfile(input: { name?: string; password?: string }) {
+    if (!user) return;
+    const updated = await apiEndpoints.updateUser(user.id, input);
+    setUser({ ...user, name: updated.name, email: updated.email });
+  }
+
+  // exclui a conta e encerra a sessão
+  async function deleteAccount() {
+    if (!user) return;
+    await apiEndpoints.deleteUser(user.id);
+    logout();
   }
 
   function logout() {
@@ -45,7 +61,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, isAuthenticated: !!user && !!getToken(), login, register, logout }),
+    () => ({
+      user,
+      isAuthenticated: !!user && !!getToken(),
+      login,
+      register,
+      updateProfile,
+      deleteAccount,
+      logout,
+    }),
     [user],
   );
 
