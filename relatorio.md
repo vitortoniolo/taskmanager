@@ -3,8 +3,7 @@
 ## Aplicação Full Stack para Gerenciamento Colaborativo de Tarefas
 
 **Disciplina:** Programação Full Stack
-**Autores:** _(preencher nomes dos integrantes)_
-**Turma:** _(preencher turma)_
+**Autor:** José Vitor Toniolo da Silva
 
 ---
 
